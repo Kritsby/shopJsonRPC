@@ -25,13 +25,14 @@ func (h *Handler) reserve(w http.ResponseWriter, req bunrouter.Request) error {
 
 	var product entity.Ids
 	if err := json.NewDecoder(body).Decode(&product); err != nil {
-		return err
+		log.Error().Err(err)
+		return h.responseJSON(w, req, http.StatusBadRequest, err)
 	}
 
 	err := h.services.Reserve(product.Ids)
 	if err != nil {
 		log.Error().Err(err)
-		return err
+		return h.responseJSON(w, req, http.StatusBadRequest, err)
 	}
 
 	return h.responseJSON(w, req, http.StatusOK, "product(s) was reserved")
@@ -53,13 +54,14 @@ func (h *Handler) reserveRelease(w http.ResponseWriter, req bunrouter.Request) e
 
 	var product entity.Ids
 	if err := json.NewDecoder(body).Decode(&product); err != nil {
-		return err
+		log.Error().Err(err)
+		return h.responseJSON(w, req, http.StatusBadRequest, err)
 	}
 
 	err := h.services.ReserveRelease(product.Ids)
 	if err != nil {
 		log.Error().Err(err)
-		return err
+		return h.responseJSON(w, req, http.StatusBadRequest, err)
 	}
 
 	return h.responseJSON(w, req, http.StatusOK, "product(s) was unreserved")
@@ -80,13 +82,14 @@ func (h *Handler) amount(w http.ResponseWriter, req bunrouter.Request) error {
 
 	storage, err := strconv.Atoi(s)
 	if err != nil {
+		log.Error().Err(err)
 		return err
 	}
 
 	result, err := h.services.GetAmount(storage)
 	if err != nil {
 		log.Error().Err(err)
-		return err
+		return h.responseJSON(w, req, http.StatusBadRequest, err)
 	}
 
 	return h.responseJSON(w, req, 200, result)
