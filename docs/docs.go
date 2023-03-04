@@ -44,7 +44,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/entity.Products"
+                                "$ref": "#/definitions/model.Products"
                             }
                         }
                     },
@@ -74,7 +74,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entity.Ids"
+                            "$ref": "#/definitions/model.Ids"
                         }
                     }
                 ],
@@ -108,7 +108,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entity.Ids"
+                            "$ref": "#/definitions/model.Ids"
                         }
                     }
                 ],
@@ -124,7 +124,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "entity.Ids": {
+        "model.Ids": {
             "type": "object",
             "properties": {
                 "ids": {
@@ -135,7 +135,7 @@ const docTemplate = `{
                 }
             }
         },
-        "entity.Products": {
+        "model.Products": {
             "type": "object",
             "properties": {
                 "amount": {

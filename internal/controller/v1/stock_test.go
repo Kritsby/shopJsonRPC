@@ -2,7 +2,7 @@ package v1
 
 import (
 	"bytes"
-	"dev/lamoda_test/internal/entity"
+	"dev/lamoda_test/internal/model"
 	"dev/lamoda_test/internal/service"
 	mock_service "dev/lamoda_test/internal/service/mocks"
 	"github.com/golang/mock/gomock"
@@ -54,7 +54,7 @@ func TestHandler_stock(t *testing.T) {
 			method:  "GET",
 			handler: "amount",
 			mockBehavior: func(s *mock_service.MockStocker) {
-				s.EXPECT().GetAmount(1).Return([]entity.Products{entity.Products{
+				s.EXPECT().GetAmount(1).Return([]model.Products{model.Products{
 					Storage: 1,
 					Product: 1,
 					Amount:  2,

@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"dev/lamoda_test/internal/entity"
+	"dev/lamoda_test/internal/model"
 	"encoding/json"
 	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bunrouter"
@@ -15,24 +15,25 @@ import (
 // @Description Reserve some products
 // @Accept  json
 // @Produce  json
-// @Param input body entity.Ids true "products id"
+// @Param input body model.Ids true "products id"
 // @Success 200
 // @Failure 500
 // @Router /v1/reserve [POST]
 func (h *Handler) reserve(w http.ResponseWriter, req bunrouter.Request) error {
+	ctx := req.Context()
 	body := req.Body
 	defer req.Body.Close()
 
-	var product entity.Ids
+	var product model.Ids
 	if err := json.NewDecoder(body).Decode(&product); err != nil {
 		log.Error().Err(err)
 		return h.responseJSON(w, req, http.StatusBadRequest, err)
 	}
 
-	err := h.services.Reserve(product.Ids)
+	err := h.services.Reserve(ctx, product)
 	if err != nil {
 		log.Error().Err(err)
-		return h.responseJSON(w, req, http.StatusBadRequest, err)
+		return h.responseJSON(w, req, http.StatusInternalServerError, err)
 	}
 
 	return h.responseJSON(w, req, http.StatusOK, "product(s) was reserved")
@@ -44,24 +45,25 @@ func (h *Handler) reserve(w http.ResponseWriter, req bunrouter.Request) error {
 // @Description Release some products
 // @Accept  json
 // @Produce  json
-// @Param input body entity.Ids true "products id"
+// @Param input body model.Ids true "products id"
 // @Success 200
 // @Failure 500
 // @Router /v1/release [POST]
 func (h *Handler) reserveRelease(w http.ResponseWriter, req bunrouter.Request) error {
+	ctx := req.Context()
 	body := req.Body
 	defer req.Body.Close()
 
-	var product entity.Ids
+	var product model.Ids
 	if err := json.NewDecoder(body).Decode(&product); err != nil {
 		log.Error().Err(err)
 		return h.responseJSON(w, req, http.StatusBadRequest, err)
 	}
 
-	err := h.services.ReserveRelease(product.Ids)
+	err := h.services.ReserveRelease(ctx, product)
 	if err != nil {
 		log.Error().Err(err)
-		return h.responseJSON(w, req, http.StatusBadRequest, err)
+		return h.responseJSON(w, req, http.StatusInternalServerError, err)
 	}
 
 	return h.responseJSON(w, req, http.StatusOK, "product(s) was unreserved")
@@ -74,23 +76,25 @@ func (h *Handler) reserveRelease(w http.ResponseWriter, req bunrouter.Request) e
 // @Accept  json
 // @Produce  json
 // @Param storage path string true "storage id"
-// @Success 200 {array} entity.Products
+// @Success 200 {array} model.Products
 // @Failure 500
 // @Router /v1/amount/{storage} [GET]
 func (h *Handler) amount(w http.ResponseWriter, req bunrouter.Request) error {
+	ctx := req.Context()
+
 	s := req.Params().ByName("storage")
 
 	storage, err := strconv.Atoi(s)
 	if err != nil {
 		log.Error().Err(err)
-		return err
-	}
-
-	result, err := h.services.GetAmount(storage)
-	if err != nil {
-		log.Error().Err(err)
 		return h.responseJSON(w, req, http.StatusBadRequest, err)
 	}
 
-	return h.responseJSON(w, req, 200, result)
+	result, err := h.services.GetAmount(ctx, storage)
+	if err != nil {
+		log.Error().Err(err)
+		return h.responseJSON(w, req, http.StatusInternalServerError, err)
+	}
+
+	return h.responseJSON(w, req, http.StatusOK, result)
 }

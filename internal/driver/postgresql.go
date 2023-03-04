@@ -1,4 +1,4 @@
-package postgresql
+package driver
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-func New(cfg config.Postgres) (*pgxpool.Pool, error) {
+func NewPostgresPool(cfg config.Postgres) (*pgxpool.Pool, error) {
 	url := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", cfg.PgUser, cfg.PgPassword, cfg.PgHost, cfg.PgPort, cfg.PgDb)
 	pool, err := pgxpool.Connect(context.Background(), url)
 	if err != nil {

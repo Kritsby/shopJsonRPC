@@ -5,7 +5,7 @@
 package mock_service
 
 import (
-	entity "dev/lamoda_test/internal/entity"
+	entity "dev/lamoda_test/internal/model"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -50,7 +50,7 @@ func (mr *MockStockerMockRecorder) GetAmount(stock interface{}) *gomock.Call {
 }
 
 // Reserve mocks base method.
-func (m *MockStocker) Reserve(products []int) error {
+func (m *MockStocker) Reserve(products entity.Ids) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Reserve", products)
 	ret0, _ := ret[0].(error)
@@ -64,7 +64,7 @@ func (mr *MockStockerMockRecorder) Reserve(products interface{}) *gomock.Call {
 }
 
 // ReserveRelease mocks base method.
-func (m *MockStocker) ReserveRelease(products []int) error {
+func (m *MockStocker) ReserveRelease(products entity.Ids) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReserveRelease", products)
 	ret0, _ := ret[0].(error)

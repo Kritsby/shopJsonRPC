@@ -3,18 +3,20 @@ package app
 import (
 	"context"
 	"dev/lamoda_test/internal/config"
-	v1 "dev/lamoda_test/internal/controller/v1"
-	"dev/lamoda_test/internal/repository/postgresql"
+	controller "dev/lamoda_test/internal/controller/v1"
+	"dev/lamoda_test/internal/driver"
+	"dev/lamoda_test/internal/repository"
 	"dev/lamoda_test/internal/server"
 	"dev/lamoda_test/internal/service"
 	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func Run(cfg config.Config) error {
-	db, err := postgresql.New(cfg.PSQL)
+	db, err := driver.NewPostgresPool(cfg.PSQL)
 	if err != nil {
 		return err
 	}
@@ -23,27 +25,38 @@ func Run(cfg config.Config) error {
 		log.Info().Msg("Connection with db close")
 	}()
 
-	repo := postgresql.NewRepository(db)
-	services := service.NewService(repo)
-	handler := v1.New(services)
+	repo := repository.NewStockPostgres(db)
+	services := service.NewStock(repo)
+	handler := controller.New(services)
 
 	srv := new(server.Server)
 	defer func() {
-		_ = srv.Shutdown(context.Background())
+		log.Info().Msg("App Shutting Down")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err = srv.Shutdown(ctx)
+		if err != nil {
+			log.Error().Err(err)
+		}
 		log.Info().Msg("Server Stopped")
 	}()
 
+	errChan := make(chan error, 1)
+
 	go func() {
 		if err = srv.Run(cfg.Server.Port, handler.InitRouter()); err != nil {
-			log.Fatal().Msgf("error occurred while running the server: %s", err.Error())
+			errChan <- err
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
-	<-quit
-
-	log.Info().Msg("App Shutting Down")
+	select {
+	case <-quit:
+	case err = <-errChan:
+		return err
+	}
 
 	return nil
 }

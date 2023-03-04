@@ -10,12 +10,14 @@ import (
 )
 
 type Handler struct {
-	services *service.Service
+	services service.Stocker
 }
 
-func New(services *service.Service) *Handler {
+func New(services service.Stocker) *Handler {
 	return &Handler{services: services}
 }
+
+type JSONServer struct{}
 
 func (h *Handler) InitRouter() *bunrouter.Router {
 	router := bunrouter.New(

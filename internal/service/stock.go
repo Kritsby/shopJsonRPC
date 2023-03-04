@@ -1,38 +1,39 @@
 package service
 
 import (
-	"dev/lamoda_test/internal/entity"
-	"dev/lamoda_test/internal/repository/postgresql"
+	"context"
+	"dev/lamoda_test/internal/model"
+	"dev/lamoda_test/internal/repository"
 )
 
-type StockService struct {
-	repo postgresql.PostgresStocker
+type Stock struct {
+	repo repository.Repository
 }
 
-func NewStockService(repo postgresql.PostgresStocker) *StockService {
-	return &StockService{
+func NewStock(repo repository.Repository) *Stock {
+	return &Stock{
 		repo: repo,
 	}
 }
 
-func (s *StockService) Reserve(products []int) error {
-	err := s.repo.Reserve(products)
+func (s *Stock) Reserve(ctx context.Context, products model.Ids) error {
+	err := s.repo.Reserve(ctx, products)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-func (s *StockService) ReserveRelease(products []int) error {
-	err := s.repo.ReserveRelease(products)
+func (s *Stock) ReserveRelease(ctx context.Context, products model.Ids) error {
+	err := s.repo.ReserveRelease(ctx, products)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *StockService) GetAmount(stock int) ([]entity.Products, error) {
-	result, err := s.repo.GetAmount(stock)
+func (s *Stock) GetAmount(ctx context.Context, stock int) ([]model.Products, error) {
+	result, err := s.repo.GetAmount(ctx, stock)
 	if err != nil {
 		return nil, err
 	}
