@@ -3,7 +3,6 @@ package controller
 import (
 	"dev/lamoda_test/internal/model"
 	"dev/lamoda_test/internal/service"
-	"fmt"
 )
 
 // RpcApi Api structure
@@ -16,7 +15,6 @@ func New(services service.Stocker) *RpcApi {
 }
 
 func (r *RpcApi) Reserve(args *model.Args, result *string) error {
-	fmt.Println(args.Ids)
 	err := r.services.Reserve(args.Ids)
 	if err != nil {
 		return err

@@ -20,5 +20,3 @@ RUN apt-get -y install postgresql-client
 COPY --from=builder /app/api ./
 COPY --from=builder /app/wait-for-postgres.sh ./
 COPY --from=builder /app/config.env ./
-
-RUN

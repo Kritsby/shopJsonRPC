@@ -23,6 +23,7 @@ func (s *Stock) Reserve(products []int) error {
 
 	return nil
 }
+
 func (s *Stock) ReserveRelease(products []int) error {
 	err := s.repo.ReserveRelease(products)
 	if err != nil {

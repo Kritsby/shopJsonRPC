@@ -4,10 +4,15 @@ import (
 	"context"
 	"dev/lamoda_test/internal/model"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/zerolog/log"
 	"strconv"
+)
+
+const (
+	errNotFound = "one or more of the listed id's was not found or the product is out of stock"
 )
 
 type StockPsql struct {
@@ -19,15 +24,33 @@ func NewStockPostgres(db *pgxpool.Pool) *StockPsql {
 }
 
 func (s *StockPsql) Reserve(products []int) error {
+	ok, err := s.checkId(products)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return fmt.Errorf(errNotFound)
+	}
+
 	updateQuery := `
-UPDATE
-    shop.product_amount
-SET
-    amount = amount - 1
-WHERE
-    product_id = ANY(ARRAY[$1::INTEGER[]])
-  	AND amount > 0
-RETURNING storage_id, product_id, amount;`
+WITH avail AS (
+    SELECT pa.storage_id,
+           pa.product_id,
+           ROW_NUMBER() OVER(PARTITION BY pa.product_id
+               ORDER BY pa.amount DESC) AS rank
+    FROM shop.product_amount AS pa
+    WHERE pa.product_id = ANY(ARRAY[$1::INTEGER[]])
+    AND pa.amount > 0
+	AND pa.amount > pa.reserved
+)
+UPDATE shop.product_amount
+SET reserved = reserved + 1
+WHERE (storage_id, product_id) = ANY(
+    SELECT storage_id, product_id
+    FROM avail
+    WHERE rank = 1
+);`
 
 	rows, err := s.db.Query(context.Background(), updateQuery, products)
 	if err != nil {
@@ -64,15 +87,33 @@ RETURNING storage_id, product_id, amount;`
 }
 
 func (s *StockPsql) ReserveRelease(products []int) error {
+	ok, err := s.checkId(products)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return fmt.Errorf(errNotFound)
+	}
+
 	updateQuery := `
-UPDATE
-    shop.product_amount
-SET
-    amount = amount + 1
-WHERE
-    product_id = ANY(ARRAY[$1::INTEGER[]])
-  	AND amount > 0
-RETURNING storage_id, product_id, amount;`
+WITH avail AS (
+    SELECT pa.storage_id,
+           pa.product_id,
+           ROW_NUMBER() OVER(PARTITION BY pa.product_id
+               ORDER BY pa.reserved DESC) AS rank
+    FROM shop.product_amount AS pa
+    WHERE pa.product_id = ANY(ARRAY[$1::INTEGER[]])
+    AND pa.reserved > 0
+	AND pa.amount > pa.reserved
+)
+UPDATE shop.product_amount
+SET reserved = reserved - 1
+WHERE (storage_id, product_id) = ANY(
+    SELECT storage_id, product_id
+    FROM avail
+    WHERE rank = 1
+);`
 
 	rows, err := s.db.Query(context.Background(), updateQuery, products)
 	if err != nil {
@@ -113,7 +154,8 @@ func (s *StockPsql) GetAmount(stockId int) ([]model.Products, error) {
 SELECT
     storage_id,
     product_id,
-	amount
+	amount,
+	reserved
 FROM
 	shop.product_amount WHERE storage_id = $1`
 
@@ -127,7 +169,7 @@ FROM
 	for rows.Next() {
 		var r model.Products
 
-		err = rows.Scan(&r.Storage, &r.Product, &r.Amount)
+		err = rows.Scan(&r.Storage, &r.Product, &r.Amount, &r.Reserved)
 		if err != nil {
 			return nil, err
 		}
@@ -142,4 +184,23 @@ FROM
 	}
 
 	return result, nil
+}
+
+func (s *StockPsql) checkId(products []int) (bool, error) {
+	query := `
+SELECT EXISTS
+    (SELECT
+         *
+     FROM
+         shop.product_amount
+     WHERE
+         product_id = ANY(ARRAY[$1::INTEGER[]]) AND amount > 0);`
+
+	var ok bool
+	err := s.db.QueryRow(context.Background(), query, products).Scan(&ok)
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
 }

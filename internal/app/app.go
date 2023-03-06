@@ -23,11 +23,10 @@ func Run(cfg config.Config) error {
 
 	repo := repository.NewStockPostgres(db)
 	services := service.NewStock(repo)
-	controller.New(services)
+	api := controller.New(services)
 
-	newRpc := new(controller.RpcApi)
 	serverRpc := rpc.NewServer()
-	serverRpc.Register(newRpc)
+	serverRpc.Register(api)
 
 	srv := new(server.Listener)
 
