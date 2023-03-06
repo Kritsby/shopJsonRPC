@@ -5,7 +5,7 @@ services:
   postgres:
     restart: always
     image: postgres:latest
-    container_name: postgres
+    container_name: shop_db
     environment:
       POSTGRES_DB: "shop"
       POSTGRES_USER: "user"
@@ -27,8 +27,9 @@ services:
       PGDB: shop
       PGUSER: user
       PGPASSWORD: test
-      PGHOST: postgres
+      PGHOST: shop_db
       PGPORT: 5432
+      PORT: 8088
     depends_on:
       - postgres
     command:
