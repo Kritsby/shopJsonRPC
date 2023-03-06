@@ -1,18 +1,14 @@
 package app
 
 import (
-	"context"
 	"dev/lamoda_test/internal/config"
-	controller "dev/lamoda_test/internal/controller/v1"
+	"dev/lamoda_test/internal/controller"
 	"dev/lamoda_test/internal/driver"
 	"dev/lamoda_test/internal/repository"
 	"dev/lamoda_test/internal/server"
 	"dev/lamoda_test/internal/service"
 	"github.com/rs/zerolog/log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"net/rpc"
 )
 
 func Run(cfg config.Config) error {
@@ -27,36 +23,15 @@ func Run(cfg config.Config) error {
 
 	repo := repository.NewStockPostgres(db)
 	services := service.NewStock(repo)
-	handler := controller.New(services)
+	controller.New(services)
 
-	srv := new(server.Server)
-	defer func() {
-		log.Info().Msg("App Shutting Down")
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+	newRpc := new(controller.RpcApi)
+	serverRpc := rpc.NewServer()
+	serverRpc.Register(newRpc)
 
-		err = srv.Shutdown(ctx)
-		if err != nil {
-			log.Error().Err(err)
-		}
-		log.Info().Msg("Server Stopped")
-	}()
+	srv := new(server.Listener)
 
-	errChan := make(chan error, 1)
-
-	go func() {
-		if err = srv.Run(cfg.Server.Port, handler.InitRouter()); err != nil {
-			errChan <- err
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
-	select {
-	case <-quit:
-	case err = <-errChan:
-		return err
-	}
+	srv.New(cfg.Server.Port, serverRpc)
 
 	return nil
 }

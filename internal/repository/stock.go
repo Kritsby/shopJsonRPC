@@ -18,7 +18,7 @@ func NewStockPostgres(db *pgxpool.Pool) *StockPsql {
 	return &StockPsql{db: db}
 }
 
-func (s *StockPsql) Reserve(ctx context.Context, products model.Ids) error {
+func (s *StockPsql) Reserve(products []int) error {
 	updateQuery := `
 UPDATE
     shop.product_amount
@@ -29,7 +29,7 @@ WHERE
   	AND amount > 0
 RETURNING storage_id, product_id, amount;`
 
-	rows, err := s.db.Query(ctx, updateQuery, products)
+	rows, err := s.db.Query(context.Background(), updateQuery, products)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ RETURNING storage_id, product_id, amount;`
 	return nil
 }
 
-func (s *StockPsql) ReserveRelease(ctx context.Context, products model.Ids) error {
+func (s *StockPsql) ReserveRelease(products []int) error {
 	updateQuery := `
 UPDATE
     shop.product_amount
@@ -74,7 +74,7 @@ WHERE
   	AND amount > 0
 RETURNING storage_id, product_id, amount;`
 
-	rows, err := s.db.Query(ctx, updateQuery, products)
+	rows, err := s.db.Query(context.Background(), updateQuery, products)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ RETURNING storage_id, product_id, amount;`
 	return nil
 }
 
-func (s *StockPsql) GetAmount(ctx context.Context, stockId int) ([]model.Products, error) {
+func (s *StockPsql) GetAmount(stockId int) ([]model.Products, error) {
 	query := `
 SELECT
     storage_id,
@@ -117,7 +117,7 @@ SELECT
 FROM
 	shop.product_amount WHERE storage_id = $1`
 
-	rows, err := s.db.Query(ctx, query, stockId)
+	rows, err := s.db.Query(context.Background(), query, stockId)
 	if err != nil {
 		return nil, err
 	}

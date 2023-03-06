@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"dev/lamoda_test/internal/model"
 	"dev/lamoda_test/internal/repository"
 )
@@ -16,24 +15,24 @@ func NewStock(repo repository.Repository) *Stock {
 	}
 }
 
-func (s *Stock) Reserve(ctx context.Context, products model.Ids) error {
-	err := s.repo.Reserve(ctx, products)
+func (s *Stock) Reserve(products []int) error {
+	err := s.repo.Reserve(products)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-func (s *Stock) ReserveRelease(ctx context.Context, products model.Ids) error {
-	err := s.repo.ReserveRelease(ctx, products)
+func (s *Stock) ReserveRelease(products []int) error {
+	err := s.repo.ReserveRelease(products)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *Stock) GetAmount(ctx context.Context, stock int) ([]model.Products, error) {
-	result, err := s.repo.GetAmount(ctx, stock)
+func (s *Stock) GetAmount(stock int) ([]model.Products, error) {
+	result, err := s.repo.GetAmount(stock)
 	if err != nil {
 		return nil, err
 	}

@@ -1,27 +1,52 @@
 package server
 
 import (
-	"context"
+	"fmt"
+	"github.com/rs/zerolog/log"
+	"io"
+	"net"
 	"net/http"
-	"time"
+	"net/rpc"
+	"net/rpc/jsonrpc"
 )
 
-type Server struct {
-	httpServer *http.Server
+type HttpConn struct {
+	in  io.Reader
+	out io.Writer
 }
 
-func (s *Server) Run(port string, handler http.Handler) error {
-	s.httpServer = &http.Server{
-		Addr:           ":" + port,
-		Handler:        handler,
-		MaxHeaderBytes: 1 << 20, // 1 MB
-		ReadTimeout:    100 * time.Second,
-		WriteTimeout:   100 * time.Second,
+func (c *HttpConn) Read(p []byte) (n int, err error)  { return c.in.Read(p) }
+func (c *HttpConn) Write(d []byte) (n int, err error) { return c.out.Write(d) }
+func (c *HttpConn) Close() error                      { return nil }
+
+type Listener struct {
+	Listener net.Listener
+	rpcS     *rpc.Server
+}
+
+func (l *Listener) New(port string, server *rpc.Server) {
+	fmt.Println(port)
+	listener, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Fatal().Err(err)
 	}
 
-	return s.httpServer.ListenAndServe()
-}
+	l.Listener = listener
 
-func (s *Server) Shutdown(ctx context.Context) error {
-	return s.httpServer.Shutdown(ctx)
+	err = http.Serve(listener, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if r.URL.Path == "/test" {
+			serverCodec := jsonrpc.NewServerCodec(&HttpConn{in: r.Body, out: w})
+			w.Header().Set("Content-type", "application/json")
+			w.WriteHeader(200)
+			err := server.ServeRequest(serverCodec)
+			if err != nil {
+				log.Printf("Error while serving JSON request: %v", err)
+				http.Error(w, "Error while serving JSON request, details have been logged.", 500)
+				return
+			}
+		}
+	}))
+
+	log.Error().Err(err)
 }

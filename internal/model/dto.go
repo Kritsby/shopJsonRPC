@@ -1,3 +1,7 @@
 package model
 
-type Ids []int
+type Args struct {
+	Ids   []int
+	Store int
+	Text  string
+}
